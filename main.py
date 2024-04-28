@@ -1,6 +1,6 @@
 # following https://ona-book.org/community.html
 #pip install onadata igraph leidenalg python-louvain
-from onadata import wikivote,email_edgelist, email_vertices
+from onadata import email_edgelist, email_vertices
 import pandas as pd
 import networkx as nx
 from cdlib import algorithms, evaluation, NodeClustering, viz
@@ -13,35 +13,6 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 
 # https://python-louvain.readthedocs.io/en/latest/api.html
 # pip install community python-louvain as networkx.community didnt work
-
-def question1():
-    print('Question 1: Determine how many weakly connected components there are in this graph. How large is the largest component?')
-    print(str(nx.number_weakly_connected_components(dir_graph_wikivote)) + ' weakly connected components')
-    components = nx.weakly_connected_components(dir_graph_wikivote)
-    subgraphs = [dir_graph_wikivote.subgraph(component).copy() 
-    for component in components]
-    # size of subgraphs
-    weakly_components_lengths = [len(subgraph.nodes) for subgraph in subgraphs]
-    print('Largest weakly component length: ' + str(max(weakly_components_lengths)))
-    print()
-
-
-def question2():
-    print('Question 2: Determine how many strongly connected components there are in this graph. How large is the largest component?')
-    #todo mb explain this
-    print(str(nx.number_strongly_connected_components(dir_graph_wikivote)) + ' strongly connected components')
-#todo mb comment more around here, after doing a report
-    components = nx.strongly_connected_components(dir_graph_wikivote)
-    subgraphs = [dir_graph_wikivote.subgraph(component).copy() 
-    for component in components]
-    # size of subgraphs
-    strongly_components_lengths = [len(subgraph.nodes) for subgraph in subgraphs]
-    print('Largest strongly component length: ' + str(max(strongly_components_lengths)))
-    print()
-
-def question3(): # todo 
-    print('')
-    
 
 def question4(und_graph_email): # hmm.... mb all the connected vertexes r in the same component & there are 1004-986 isolated vertexes
     print('Question 4: Determine the connected components of this network and reduce the network to its largest connected component.')
@@ -254,17 +225,9 @@ def question13(graph, communities_algos_result_list):
 
 
 # load csv data 
-df_wikivote = wikivote()
 df_email_edgelist = email_edgelist()
 df_email_vertices = email_vertices()
 und_graph_email = nx.from_pandas_edgelist(df_email_edgelist, source='from', target='to', create_using=nx.Graph)
-
-# create directed graph
-dir_graph_wikivote = nx.from_pandas_edgelist(df_wikivote, source='from', target='to', create_using=nx.DiGraph())
-
-# question1()
-# question2()
-# question3()
 
 df_email_edgelist = email_edgelist()
 graph = nx.from_pandas_edgelist(df_email_edgelist, source='from', target='to', create_using=nx.Graph)
