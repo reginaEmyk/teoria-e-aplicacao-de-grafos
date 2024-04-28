@@ -1,5 +1,7 @@
 # following https://ona-book.org/community.html
-#pip install onadata igraph leidenalg python-louvain
+# reference: https://python-louvain.readthedocs.io/en/latest/api.html
+# pip install onadata igraph leidenalg python-louvain
+# pip install community python-louvain as networkx.community didnt work
 from onadata import email_edgelist, email_vertices
 import pandas as pd
 import networkx as nx
@@ -11,43 +13,51 @@ import seaborn as sns
 import community as community_louvain
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 
-# https://python-louvain.readthedocs.io/en/latest/api.html
-# pip install community python-louvain as networkx.community didnt work
-
-def question4(und_graph_email): # hmm.... mb all the connected vertexes r in the same component & there are 1004-986 isolated vertexes
+def question4(und_graph_email, df_email_vertices):
     print('Question 4: Determine the connected components of this network and reduce the network to its largest connected component.')
- #und_graph_email_vertices = nx.from_pandas_edgelist(df_email_vertices, source='from', target='to', create_using=nx.Graph)
-# todo reduce und_graph_email_vertices as well
     # get all connected components
     components = list(nx.connected_components(und_graph_email))
+    # copy each component to a new graph
     subgraphs = [und_graph_email.subgraph(component).copy() 
     for component in components]
     print('Number of connected components: ' + str(len(components)))
     # size of subgraphs
     components_lengths = [len(subgraph.nodes) for subgraph in subgraphs] 
-# ref https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.components.connected_components.html
-    # reduce network to largest component
+    print('Sizes of connected components: ' + str(components_lengths))
+
+    # a simple way to get largest component
+    # ref https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.components.connected_components.html
     largest_cc = max(nx.connected_components(und_graph_email), key=len)
     largest_cc_graph = und_graph_email.subgraph(largest_cc)
-    print("Size of largest connected component: " + str(len(largest_cc_graph.nodes()))) # TODO !FIX should reduce network to largest connected component
+    print("Size of largest connected component: " + str(len(largest_cc_graph.nodes())))
+    
+    
+    # get df for vertices & df for edges in largest connected component
+    # update df_email_vertices to only include vertices in largest connected component. note that email_vertices() has department info not present in graph
+    df_email_vertices_largest_connected = df_email_vertices[df_email_vertices['id'].isin(list(largest_cc_graph.nodes()))]
+    # get a df of edges in largest component, same structure as email_edgelist()
+    df_edges_largest_connected = pd.DataFrame(list(largest_cc_graph.edges()), columns=['from', 'to'])
+    print('Largest connected component vertices (first 3 rows of df):')
+    print(df_email_vertices_largest_connected.head(3))
+    print('Largest connected component edges (first 3 rows of df):')
+    print(df_edges_largest_connected.head(3))
+    print('Original Network:')
+    print(und_graph_email)
+    print('Reduced Network:')
+    print(largest_cc_graph)
+    print('Question 4 done.')
     print()
-    global und_graph_email_largest_connected
-    global df_email_vertices_largest_connected
-    und_graph_email_largest_connected = largest_cc_graph
-    # todo do same for edges
-    df_email_vertices_largest_connected = df_email_vertices[df_email_vertices['id'].isin([und_graph_email_largest_connected.nodes()])]
-
-    return largest_cc_graph
+    return largest_cc_graph, df_email_vertices_largest_connected, df_edges_largest_connected
 
 def question5(graph): # todo
-    print('Use the Louvain algorithm to determine a vertex partition/community structure with optimal modularity in this network.')    
-    # create undirected network
-    email = nx.from_pandas_edgelist(df_email_edgelist, source = "from", target = "to")
+    print('Question 5: Use the Louvain algorithm to determine a vertex partition/community structure with optimal modularity in this network.')    
     # get louvain partition which optimizes modularity
-    louvain_comms_email = algorithms.louvain(email)
+    louvain_comms_email = algorithms.louvain(graph)
+    print('Louvain communities in email edgelist:')
     print(pd.DataFrame(louvain_comms_email.communities).transpose())
-    #print('Modularity ' + str(louvain_comms_email.newman_girvan_modularity().score))
-# todo ? arent there many louvains? why isnt a list returned? dont i have to pick ? assuming no for now
+    #print(pd.DataFrame(louvain_comms_email.communities).dtypes)
+    print('Question 5 done.')
+    print()
     return louvain_comms_email
 
 
@@ -56,34 +66,39 @@ def graph_to_NodeClustering_obj(graph):
     # reference https://cdlib.readthedocs.io/en/latest/reference/classes.html  
     return NodeClustering([list(graph.nodes)], graph=graph)   
 
-
-def question6(louvain_email): # 
+# reference https://cdlib.readthedocs.io/en/latest/reference/evaluation.html
+def question6(graph_email, louvain_email): # 
     print('Question 6: Compare the modularity of the Louvain community structure with that of the ground truth department structure.')
-    # todo fix should make community from sharing a dept?
-    print('Modularity of louvain in emails edgelist' + str(louvain_email.newman_girvan_modularity().score))    
-    ground_truth_communities  = graph_to_NodeClustering_obj(und_graph_email_largest_connected)  # df_column_to_NodeClustering_obj(und_graph_email, largest_email_vertices, 'dept')
-    # reference https://cdlib.readthedocs.io/en/latest/reference/eval/cdlib.evaluation.newman_girvan_modularity.html
-    ground_truth_modularity = evaluation.newman_girvan_modularity(und_graph_email_largest_connected , ground_truth_communities).score
-    print('Modularity of ground truth department structure in email vertices:', ground_truth_modularity)
-    return ground_truth_communities
-
-def visualize_louvain(graph, louvain_comms):
-    # Create dict with labels only for Mr Hi and John A
-    node_labels = {node: node if node == "Mr Hi" or node == "John A" else "" for node in graph.nodes}
-    # Create and order community mappings
-    communities = louvain_comms.to_node_community_map()
-  # get wont cause error if communities[node] is none 
-    communities = [communities[node].get(node) for node in graph.nodes]
-    # Create color map
-    pastel2 = cm.get_cmap('Pastel2', max(communities) + 1)
-    # Visualize Louvain community structure
-    plt.figure(figsize=(10, 6))
-    np.random.seed(123)
-    nx.draw_spring(graph, labels=node_labels, cmap=pastel2, node_color=communities, edge_color="grey")
-    plt.title("Graph color-coded by Louvain community")
-    plt.show()
-
-
+    ground_truth_communities  = graph_to_NodeClustering_obj(graph_email)  # turns whole graph into a node cluster
+    ground_truth_modularity = evaluation.modularity_density(graph_email , ground_truth_communities).score
+    louvain_modularity = evaluation.modularity_density(graph_email , louvain_email).score
+    louvain_modularity_newman_girvan_modularity = louvain_email.newman_girvan_modularity().score
+    ground_truth_modularity_newman_girvan_modularity = evaluation.newman_girvan_modularity(graph_email, ground_truth_communities).score
+    louvain_email_modularity_overlap = evaluation.modularity_overlap(graph_email , louvain_email).score
+    ground_truth_modularity_modularity_overlap = evaluation.modularity_overlap(graph_email , ground_truth_communities).score
+    print('Newman Girvan modularity score of Louvain: ' + str(louvain_modularity_newman_girvan_modularity))    
+    print('Newman Girvan modularity score of ground truth: ' + str(ground_truth_modularity_newman_girvan_modularity))
+    if ground_truth_modularity_newman_girvan_modularity != 0 and louvain_modularity_newman_girvan_modularity:
+        print(' Newman Girvan Modularity score percentage of  louvain/ground truth : ', louvain_modularity_newman_girvan_modularity / ground_truth_modularity_newman_girvan_modularity * 100)  
+    else:
+        print('A modularity is 0 so no percentage is calculated.')
+    print()
+    print( 'Modularity of overlapping communities score of Louvain: ' + str(louvain_email_modularity_overlap))
+    print( 'Modularity of overlapping communities score of ground truth: ' + str(ground_truth_modularity_modularity_overlap))
+    if ground_truth_modularity_modularity_overlap != 0 and louvain_email_modularity_overlap:
+        print('Modularity score percentage of  louvain/ground truth : ', louvain_email_modularity_overlap / ground_truth_modularity_modularity_overlap * 100)
+    else:
+        print('A modularity is 0 so no percentage is calculated.')
+    print()
+    print( 'Modularity score of Louvain: ' + str(louvain_modularity))
+    print('Modularity score of ground truth: ', ground_truth_modularity)
+    if ground_truth_modularity != 0 and louvain_modularity:
+        print('Modularity score percentage of  louvain/ground truth : ', louvain_modularity / ground_truth_modularity * 100)
+    else:
+        print('A modularity is 0 so no percentage is calculated.')
+    print()
+    print('Question 6 done.')
+    return 
 
 def visualize(graph, communities):
     # create dict with labels 
@@ -179,7 +194,6 @@ def question9(graph):
     print('Amount of largest cliques ' + str(amount_largest_cliques))
     
 
-
 def question10(df_cliques, largest_cliques):
     print('Question 10: Try to visualize the members of these cliques in the context of the entire graph. What can you conclude?')
     df_cliques['vertex'] = df_cliques['vertex'].astype(int)
@@ -224,36 +238,36 @@ def question13(graph, communities_algos_result_list):
 
 
 
-# load csv data 
+# load csv data and turn edges into undirected graph
 df_email_edgelist = email_edgelist()
 df_email_vertices = email_vertices()
 und_graph_email = nx.from_pandas_edgelist(df_email_edgelist, source='from', target='to', create_using=nx.Graph)
 
-df_email_edgelist = email_edgelist()
-graph = nx.from_pandas_edgelist(df_email_edgelist, source='from', target='to', create_using=nx.Graph)
-#und_graph_email = question4(und_graph_email) # network reduced to largest
-# question4(und_graph_email)
 
-louvain_email = question5(und_graph_email) # todo independent questions
-# ground_truth_dept_community = question6(louvain_email)
+graph = nx.from_pandas_edgelist(df_email_edgelist, source='from', target='to', create_using=nx.Graph)
+# question4(und_graph_email, df_email_vertices) # returns largest connected component
+# question5(und_graph_email) # returns louvain communities
+
+louvain_email = algorithms.louvain(graph)
+question6(graph, louvain_email)
 
 # question7(ground_truth_dept_community) # todo fix looks sketchy that theyre all the same color-- all same dept?
 # question8(und_graph_email, louvain_email, df_email_vertices)
-df_comm_dept_per_vertex, percentage_per_community = get_dfs_vertex_by_comm_dept(und_graph_email, louvain_email, df_email_vertices)
-# question9(und_graph_email)
-max_clique_size, largest_cliques = largest_cliques_info(und_graph_email)
-vertices_in_largest_cliques = get_unique_vertices_in_list_of_cliques(largest_cliques)
+# df_comm_dept_per_vertex, percentage_per_community = get_dfs_vertex_by_comm_dept(und_graph_email, louvain_email, df_email_vertices)
+# # question9(und_graph_email)
+# max_clique_size, largest_cliques = largest_cliques_info(und_graph_email)
+# vertices_in_largest_cliques = get_unique_vertices_in_list_of_cliques(largest_cliques)
 
-df_cliques = df_comm_dept_per_vertex.copy()
-# question10(df_cliques, largest_cliques)
+# df_cliques = df_comm_dept_per_vertex.copy()
+# # question10(df_cliques, largest_cliques)
 
-# checking amount of nodes that should be in graph
-# print(nx.from_pandas_edgelist(email_edgelist(), source='from', target='to', create_using=nx.Graph).number_of_nodes())
+# # checking amount of nodes that should be in graph
+# # print(nx.from_pandas_edgelist(email_edgelist(), source='from', target='to', create_using=nx.Graph).number_of_nodes())
 
 
-# question11(und_graph_email)
-leiden_email = algorithms.leiden(und_graph_email)
-question13(und_graph_email, [louvain_email, leiden_email])
+# # question11(und_graph_email)
+# leiden_email = algorithms.leiden(und_graph_email)
+# question13(und_graph_email, [louvain_email, leiden_email])
 
 # COMPARE REF https://cdlib.readthedocs.io/en/latest/reference/viz.html
 
