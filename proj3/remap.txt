@@ -1,0 +1,28 @@
+remapping teams to artists as sports are depressingly not interesting and the only good part is screaming in a stadium regardless of who did whatever
+
+artists of more overlapping publics cannot play at the same time in order for the public to make the best of their money and time,
+by watching artists they enjoy and not being divided between any.
+
+abrev                   name                        enemies                                             
+                                                                           |                                    
+CAP                  Athletico (Pr)                                        |                                    
+ACG                  Atlético (Go)                                         |                                    
+CAM                  Atlético (MG)              CAM - CEC2                 |                                    
+ECB                  Bahia                      ECB - ECV                  |                                    
+BFR                  Botafogo (RJ)              BFR – (CRF, FFC, CRVG)     |                                    
+SCCP                 Corinthians                SCCP – (SEP, SPFC)         |                                    
+CEC1                 Criciúma                                              |                                    
+CEC2                 Cruzeiro                   CEC2 - CAM                 |                                    
+CEC3                 Cuiabá                                                |                                    
+CRF                  Flamengo                   CRF – (BFR, FFC, CRVG)     |                                    
+FFC                  Fluminense                 FFC – (CRF, BFR, CRVG)     |                                    
+FSC                  Fortaleza                                             |                                    
+FBPA                 Grêmio                     FBPA - SCI                 |                                    
+SCI                  Internacional              SCI - FBPA                 |                                    
+ECJ                  Juventude                                             |                                    
+SEP                  Palmeiras                  SEP – (SPFC, SCCP)         |                                    
+RBB                  Red Bull                   Bragantino                 |                                    
+SPFC                 São Paulo                  SPFC – (SEP, SCCP)         |                                    
+CRVG                 Vasco da Gama              CRVG – (CRF, FFC, BFR)     |                                    
+ECV                  Vitória                    ECV - ECB                  |                                    
+
